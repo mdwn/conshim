@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/meowfaceman/conshim/cmd/manifest"
+	"github.com/meowfaceman/conshim/cmd/registry"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -19,6 +21,9 @@ func init() {
 	rootCmd.AddCommand(binPathCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(updateCmd)
+
+	rootCmd.AddCommand(manifest.Root())
+	rootCmd.AddCommand(registry.Root())
 }
 
 func Execute() {
