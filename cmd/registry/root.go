@@ -13,6 +13,7 @@ var (
 )
 
 func init() {
+	rootCmd.AddCommand(addCmd)
 }
 
 func Root() *cobra.Command {

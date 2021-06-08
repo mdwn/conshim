@@ -21,8 +21,9 @@ const (
 
 // ConfigDirectory is the configuration directory where all the shims and configuration live.
 type ConfigDirectory struct {
-	lock    *flock.Flock
-	binPath string
+	lock         *flock.Flock
+	binPath      string
+	registryPath string
 }
 
 var (
@@ -53,15 +54,22 @@ func newConfigDirectory() (*ConfigDirectory, error) {
 
 	lockFile := filepath.Join(configDirPath, "lock")
 	binPath := filepath.Join(configDirPath, "bin")
+	registryPath := filepath.Join(configDirPath, "registries")
 
-	// Make the config directory if it doesn't already exist.
+	// Make the bin directory if it doesn't already exist.
 	if err := os.MkdirAll(binPath, 0700); err != nil {
 		return nil, errors.Wrap(err, "error creating configuration directory")
 	}
 
+	// Make the registry directory if it doesn't already exist.
+	if err := os.MkdirAll(registryPath, 0700); err != nil {
+		return nil, errors.Wrap(err, "error creating configuration directory")
+	}
+
 	return &ConfigDirectory{
-		lock:    flock.New(lockFile),
-		binPath: binPath,
+		lock:         flock.New(lockFile),
+		binPath:      binPath,
+		registryPath: registryPath,
 	}, nil
 }
 
@@ -148,6 +156,17 @@ func (c *ConfigDirectory) ListBinFiles() ([]string, error) {
 	}
 
 	return shims, nil
+}
+
+// CreateRegistryFile will create a registry file with the given name. It's up to the caller to close this file.
+func (c *ConfigDirectory) CreateRegistryFile(name string) (*os.File, error) {
+	file, err := os.Create(filepath.Join(c.registryPath, name))
+
+	if err != nil {
+		return nil, errors.Wrap(err, "error while creating registry file")
+	}
+
+	return file, nil
 }
 
 func (c *ConfigDirectory) getLock() error {

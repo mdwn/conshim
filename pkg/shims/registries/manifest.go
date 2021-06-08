@@ -17,7 +17,7 @@ const (
 
 // Manifest is a manifest of shims that are housed externally.
 type Manifest struct {
-	// Source is the name of the source this manifest represents.
+	// Source is the URL of the registry that this manifest belongs to.
 	Source string `json:"source"`
 
 	// Shims is a list of shims described by this manifest. The key here is the name of the shim
@@ -29,6 +29,9 @@ type Manifest struct {
 type Shim struct {
 	// Version is the version of teh shim represented in the manifest.
 	Version string `json:"version"`
+
+	// Description is the description string for the shim.
+	Description string `json:"description"`
 
 	// Command is the shim comman.
 	Command string `json:"command"`
