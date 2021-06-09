@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/meowfaceman/conshim/pkg/shims"
+	"github.com/meowfaceman/conshim/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +14,7 @@ var (
 		Long:  "Prints out the bin path where the shims are located.",
 
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(shims.BinPath())
+			fmt.Println(config.BinPath())
 		},
 	}
 )

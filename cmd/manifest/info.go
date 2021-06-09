@@ -2,9 +2,7 @@ package manifest
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/meowfaceman/conshim/pkg/shims/registries"
 	"github.com/spf13/cobra"
 )
 
@@ -15,15 +13,8 @@ var (
 		Long:  "Prints out general information about a manifest.",
 
 		Run: func(cmd *cobra.Command, args []string) {
-			manifestFile, err := os.Open(manifestFileName)
-			cobra.CheckErr(err)
-
-			defer func() {
-				cobra.CheckErr(manifestFile.Close())
-			}()
-
-			m, err := registries.ReadManifest(manifestFile)
-			cobra.CheckErr(err)
+			m, closeFunc := readManifestFile()
+			defer closeFunc()
 
 			fmt.Printf("Source: %s\n", m.Source)
 			fmt.Printf("Number of shims: %d\n", len(m.Shims))
@@ -32,5 +23,5 @@ var (
 )
 
 func init() {
-	BindCommonManifestFlags(infoCmd)
+	bindCommonManifestFlags(infoCmd)
 }

@@ -15,7 +15,11 @@ var (
 func init() {
 	rootCmd.AddCommand(addShimCmd)
 	rootCmd.AddCommand(createCmd)
+	rootCmd.AddCommand(getShimCmd)
 	rootCmd.AddCommand(infoCmd)
+	rootCmd.AddCommand(removeShimCmd)
+	rootCmd.AddCommand(renderShimCmd)
+	rootCmd.AddCommand(updateShimCmd)
 }
 
 func Root() *cobra.Command {

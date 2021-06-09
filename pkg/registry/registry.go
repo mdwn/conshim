@@ -1,8 +1,9 @@
-package registries
+package registry
 
 import (
 	"io/ioutil"
 	"os"
+	"regexp"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/pkg/errors"
@@ -12,6 +13,11 @@ import (
 const (
 	// ManifestFilename is the default manifest filename.
 	ManifestFilename = "manifest.br"
+)
+
+var (
+	isSSHRegex = regexp.MustCompile(`^[A-Za-z_][\w-]*\$?@.*$`)
+	hasSchema  = regexp.MustCompile(`^[A-Za-z]*://.*$`)
 )
 
 // Registry is a git repository containing a conshim manifest.
@@ -36,7 +42,7 @@ func GetRegistry(url string) (*Registry, error) {
 
 	// Clone the repository and try to get the manifest file from the root.
 	repo, err := git.PlainClone(tmpDir, false, &git.CloneOptions{
-		URL: url,
+		URL: mungeURL(url),
 	})
 
 	if err != nil {
@@ -75,4 +81,15 @@ func GetRegistry(url string) (*Registry, error) {
 // GetManifest will return the manifest from the registry.
 func (r *Registry) GetManifest() *Manifest {
 	return r.manifest
+}
+
+// mungeURL will attempt to detect if a URL is missing a schema. If it is, it will prepend "https" to it.
+func mungeURL(url string) string {
+	if isSSHRegex.MatchString(url) {
+		return url
+	} else if !hasSchema.MatchString(url) {
+		return "https://" + url
+	}
+
+	return url
 }

@@ -1,4 +1,4 @@
-package shims
+package config
 
 import (
 	"fmt"
@@ -73,6 +73,16 @@ func newConfigDirectory() (*ConfigDirectory, error) {
 	}, nil
 }
 
+// Directory returns the config directory for conshim.
+func Directory() *ConfigDirectory {
+	return configDir
+}
+
+// GetBinPath will return the bin path for conshim.
+func GetBinPath() string {
+	return configDir.GetBinPath()
+}
+
 // GetBinPath will return the bin path for this config directory.
 func (c *ConfigDirectory) GetBinPath() string {
 	return c.binPath
@@ -120,15 +130,9 @@ func (c *ConfigDirectory) UpdateBinFile(filename string, data []byte) error {
 	return nil
 }
 
-// GetBinFile will return the contents of a bin file.
-func (c *ConfigDirectory) GetBinFile(filename string) ([]byte, error) {
-	data, err := ioutil.ReadFile(filepath.Join(c.binPath, filename))
-
-	if err != nil {
-		return nil, errors.Wrap(err, "error reading bin file")
-	}
-
-	return data, nil
+// GetBinFile will return the full path name of a bin file.
+func (c *ConfigDirectory) GetBinFileName(binFileName string) string {
+	return filepath.Join(c.binPath, binFileName)
 }
 
 // ListBin will return the list of the files in the bin directory.

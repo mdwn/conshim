@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/meowfaceman/conshim/pkg/shims/registries"
+	"github.com/meowfaceman/conshim/pkg/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -32,21 +32,12 @@ var (
 				cobra.CheckErr(fmt.Sprintf("manifest file '%s' already exists", manifestFileName))
 			}
 
-			manifestFile, err := os.OpenFile(manifestFileName, os.O_CREATE|os.O_WRONLY, 0644)
-			cobra.CheckErr(err)
-
-			defer func() {
-				cobra.CheckErr(manifestFile.Close())
-			}()
-
-			m := registries.CreateManifest(createCmdSourceName)
-			cobra.CheckErr(m.WriteManifest(manifestFile))
-
-			fmt.Printf("Manifest wrote to '%s'\n", manifestFileName)
+			m := registry.CreateManifest(createCmdSourceName)
+			writeManifestFile(m)
 		},
 	}
 )
 
 func init() {
-	BindCommonManifestFlags(createCmd)
+	bindCommonManifestFlags(createCmd)
 }

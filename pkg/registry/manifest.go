@@ -1,4 +1,4 @@
-package registries
+package registry
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/andybalholm/brotli"
+	"github.com/meowfaceman/conshim/pkg/shim"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -22,29 +23,14 @@ type Manifest struct {
 
 	// Shims is a list of shims described by this manifest. The key here is the name of the shim
 	// which corresponds to the executable name for this shim.
-	Shims map[string]Shim `json:"shims"`
-}
-
-// Shim is a descriptor of a shim in a manifest.
-type Shim struct {
-	// Version is the version of teh shim represented in the manifest.
-	Version string `json:"version"`
-
-	// Description is the description string for the shim.
-	Description string `json:"description"`
-
-	// Command is the shim comman.
-	Command string `json:"command"`
-
-	// Parameters are parameters that can be used for the shim command.
-	Parameters []string `json:"parameters"`
+	Shims map[string]shim.Shim `json:"shims"`
 }
 
 // CreateManifest will create a new manifest with the given source.
 func CreateManifest(source string) *Manifest {
 	return &Manifest{
 		Source: source,
-		Shims:  map[string]Shim{},
+		Shims:  map[string]shim.Shim{},
 	}
 }
 
@@ -111,9 +97,35 @@ func (m *Manifest) WriteManifest(dst io.Writer) error {
 }
 
 // AddShim will add one or more shims to the manifest. If the shim already exists, this will error.
-func (m *Manifest) AddShim(shimName string, shim Shim) error {
+func (m *Manifest) AddShim(shimName string, shim shim.Shim) error {
 	if _, ok := m.Shims[shimName]; ok {
 		return fmt.Errorf("shim '%s' already exists in the manifest", shimName)
+	}
+
+	m.Shims[shimName] = shim
+
+	return nil
+}
+
+// GetShim will get the shim from the manifest. The boolean will be true if the shim was found in the manifest.
+func (m *Manifest) GetShim(shimName string) (shim.Shim, bool) {
+	if _, ok := m.Shims[shimName]; !ok {
+		return shim.Shim{}, false
+	}
+
+	shim := m.Shims[shimName]
+
+	// Inject the source and shim name into the shim object.
+	shim.Source = m.Source
+	shim.Name = shimName
+
+	return shim, true
+}
+
+// UpdateShim will update the shim in the manifest.
+func (m *Manifest) UpdateShim(shimName string, shim shim.Shim) error {
+	if _, ok := m.Shims[shimName]; !ok {
+		return fmt.Errorf("shim '%s' does not exist in the manifest", shimName)
 	}
 
 	m.Shims[shimName] = shim

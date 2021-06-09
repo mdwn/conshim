@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-# source: custom version: {{ index . 0 }}
-{{ index . 1 }}
+# source: {{ .Source }} version: {{ .Version }}
+{{ .Command }}

@@ -1,4 +1,4 @@
-package registries
+package registry
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
+	"github.com/meowfaceman/conshim/pkg/shim"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ const (
 
 type shimNameAndInfo struct {
 	name string
-	shim Shim
+	shim shim.Shim
 }
 
 func TestAddShim(t *testing.T) {
@@ -29,7 +30,7 @@ func TestAddShim(t *testing.T) {
 			shimsToAdd: []shimNameAndInfo{
 				{
 					name: "new-shim",
-					shim: Shim{
+					shim: shim.Shim{
 						Version:    "1234",
 						Command:    "my-command",
 						Parameters: []string{"param1", "param2"},
@@ -42,7 +43,7 @@ func TestAddShim(t *testing.T) {
 			shimsToAdd: []shimNameAndInfo{
 				{
 					name: "new-shim1",
-					shim: Shim{
+					shim: shim.Shim{
 						Version:    "1234",
 						Command:    "my-command1",
 						Parameters: []string{"param1", "param2"},
@@ -50,7 +51,7 @@ func TestAddShim(t *testing.T) {
 				},
 				{
 					name: "new-shim2",
-					shim: Shim{
+					shim: shim.Shim{
 						Version:    "2345",
 						Command:    "my-command2",
 						Parameters: []string{"param1", "param2"},
@@ -63,7 +64,7 @@ func TestAddShim(t *testing.T) {
 			shimsToAdd: []shimNameAndInfo{
 				{
 					name: "new-shim1",
-					shim: Shim{
+					shim: shim.Shim{
 						Version:    "1234",
 						Command:    "my-command1",
 						Parameters: []string{"param1", "param2"},
@@ -71,7 +72,7 @@ func TestAddShim(t *testing.T) {
 				},
 				{
 					name: "new-shim1",
-					shim: Shim{
+					shim: shim.Shim{
 						Version:    "2345",
 						Command:    "my-command2",
 						Parameters: []string{"param1", "param2"},
@@ -106,6 +107,141 @@ func TestAddShim(t *testing.T) {
 	}
 }
 
+func TestUpdateShim(t *testing.T) {
+	tests := []struct {
+		name          string
+		shimsToAdd    []shimNameAndInfo
+		shimsToUpdate []shimNameAndInfo
+		expectedShims []shimNameAndInfo
+		expectedErr   bool
+	}{
+		{
+			name: "update shim",
+			shimsToAdd: []shimNameAndInfo{
+				{
+					name: "new-shim",
+					shim: shim.Shim{
+						Version:    "1234",
+						Command:    "my-command",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+			},
+			shimsToUpdate: []shimNameAndInfo{
+				{
+					name: "new-shim",
+					shim: shim.Shim{
+						Version:    "2345",
+						Command:    "my-command2",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+			},
+			expectedShims: []shimNameAndInfo{
+				{
+					name: "new-shim",
+					shim: shim.Shim{
+						Version:    "2345",
+						Command:    "my-command2",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+			},
+		},
+		{
+			name: "update one of two shims",
+			shimsToAdd: []shimNameAndInfo{
+				{
+					name: "new-shim1",
+					shim: shim.Shim{
+						Version:    "1234",
+						Command:    "my-command",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+				{
+					name: "new-shim2",
+					shim: shim.Shim{
+						Version:    "1234",
+						Command:    "my-command",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+			},
+			shimsToUpdate: []shimNameAndInfo{
+				{
+					name: "new-shim1",
+					shim: shim.Shim{
+						Version:    "2345",
+						Command:    "my-command2",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+			},
+			expectedShims: []shimNameAndInfo{
+				{
+					name: "new-shim1",
+					shim: shim.Shim{
+						Version:    "2345",
+						Command:    "my-command2",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+				{
+					name: "new-shim2",
+					shim: shim.Shim{
+						Version:    "1234",
+						Command:    "my-command",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+			},
+		},
+		{
+			name: "update non-existent shim",
+			shimsToUpdate: []shimNameAndInfo{
+				{
+					name: "new-shim",
+					shim: shim.Shim{
+						Version:    "2345",
+						Command:    "my-command2",
+						Parameters: []string{"param1", "param2"},
+					},
+				},
+			},
+			expectedErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		m := CreateManifest("dummy")
+
+		// Accumulate errors through adding shims
+		err := &multierror.Error{}
+		for _, shimToAdd := range test.shimsToAdd {
+			err = multierror.Append(err, m.AddShim(shimToAdd.name, shimToAdd.shim))
+		}
+
+		assert.NoError(t, err.ErrorOrNil(), "add shims should not error")
+
+		for _, shimToUpdate := range test.shimsToUpdate {
+			err = multierror.Append(err, m.UpdateShim(shimToUpdate.name, shimToUpdate.shim))
+		}
+
+		didErr := err.ErrorOrNil() != nil
+		assert.Equal(t, test.expectedErr, didErr, "error states should equal")
+
+		if !test.expectedErr {
+			assert.Len(t, m.Shims, len(test.expectedShims), "should have the same number of shims")
+
+			for _, expectedShim := range test.expectedShims {
+				if diff := deep.Equal(m.Shims[expectedShim.name], expectedShim.shim); diff != nil {
+					t.Errorf("%s %s", test.name, diff)
+				}
+			}
+		}
+	}
+}
 func TestRemoveShim(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -166,7 +302,7 @@ func createTestingManifest(t *testing.T) *Manifest {
 	shimsToAdd := []shimNameAndInfo{
 		{
 			name: "new-shim1",
-			shim: Shim{
+			shim: shim.Shim{
 				Version:    "1234",
 				Command:    "my-command1",
 				Parameters: []string{"param1", "param2"},
@@ -174,7 +310,7 @@ func createTestingManifest(t *testing.T) *Manifest {
 		},
 		{
 			name: "new-shim2",
-			shim: Shim{
+			shim: shim.Shim{
 				Version:    "2345",
 				Command:    "my-command2",
 				Parameters: []string{"param1", "param2"},
@@ -182,7 +318,7 @@ func createTestingManifest(t *testing.T) *Manifest {
 		},
 		{
 			name: "new-shim3",
-			shim: Shim{
+			shim: shim.Shim{
 				Version:    "3456",
 				Command:    "my-command3",
 				Parameters: []string{"param1", "param2"},

@@ -1,16 +1,16 @@
-package shims
+package config
 
 import (
 	"crypto/sha256"
 	"encoding/base64"
 
-	"github.com/meowfaceman/conshim/pkg/shims/registries"
+	"github.com/meowfaceman/conshim/pkg/registry"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
 // WriteManifestToConfigDirectory will write the manifest as a compressed, serialized file to the config directory.
-func WriteManifestToConfigDirectory(m *registries.Manifest) error {
+func WriteManifestToConfigDirectory(m *registry.Manifest) error {
 	hash := sha256.New()
 	hash.Write([]byte(m.Source))
 	hashedFilename := base64.URLEncoding.EncodeToString(hash.Sum(nil))

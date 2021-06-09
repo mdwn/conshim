@@ -1,6 +1,9 @@
 package manifest
 
 import (
+	"fmt"
+
+	"github.com/meowfaceman/conshim/pkg/shim"
 	"github.com/spf13/cobra"
 )
 
@@ -10,17 +13,30 @@ var (
 		Short: "Adds a shim to the manifest.",
 		Long:  "Adds a shim entry to the manifest.",
 
-		Args: func(cmd *cobra.Command, args []string) error {
-			// TODO: Implement this.
-			return nil
-		},
-
 		Run: func(cmd *cobra.Command, args []string) {
-			// TODO: Implement this.
+			m, closeFunc := readManifestFile()
+			func() {
+				defer closeFunc()
+
+				newShim := shim.Shim{
+					Version:     shimVersion,
+					Description: shimDescription,
+					Parameters:  shimParameters,
+					Command:     shimCommand,
+				}
+
+				cobra.CheckErr(m.AddShim(shimName, newShim))
+
+				fmt.Printf("Added shim '%s' to manifest %s.\n", shimName, m.Source)
+			}()
+
+			writeManifestFile(m)
 		},
 	}
 )
 
 func init() {
-	BindCommonManifestFlags(addShimCmd)
+	bindCommonManifestFlags(addShimCmd)
+	bindShimFlags(addShimCmd)
+	bindShimModificationFlags(addShimCmd)
 }

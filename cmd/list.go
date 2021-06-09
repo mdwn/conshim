@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/meowfaceman/conshim/pkg/shims"
+	"github.com/meowfaceman/conshim/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +14,7 @@ var (
 		Long:  "Lists all of the current shims and displays their associated container commands.",
 
 		Run: func(cmd *cobra.Command, args []string) {
-			shims, err := shims.List()
+			shims, err := config.ListShims()
 			cobra.CheckErr(err)
 
 			fmt.Printf("%25s    %7s   %s\n", "Name", "Source", "Version")

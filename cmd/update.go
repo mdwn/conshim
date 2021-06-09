@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/meowfaceman/conshim/pkg/shims"
+	"github.com/meowfaceman/conshim/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ var (
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
-			err := shims.Update(updateShimName, updateShimCommand)
+			err := config.UpdateShim(updateShimName, "user", "NONE", []string{}, updateShimCommand)
 			cobra.CheckErr(err)
 		},
 	}

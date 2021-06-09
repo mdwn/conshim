@@ -3,8 +3,8 @@ package registry
 import (
 	"fmt"
 
-	"github.com/meowfaceman/conshim/pkg/shims"
-	"github.com/meowfaceman/conshim/pkg/shims/registries"
+	"github.com/meowfaceman/conshim/pkg/config"
+	"github.com/meowfaceman/conshim/pkg/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -27,10 +27,10 @@ var (
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
-			registry, err := registries.GetRegistry(addRegistryName)
+			registry, err := registry.GetRegistry(addRegistryName)
 			cobra.CheckErr(err)
 
-			cobra.CheckErr(shims.WriteManifestToConfigDirectory(registry.GetManifest()))
+			cobra.CheckErr(config.WriteManifestToConfigDirectory(registry.GetManifest()))
 		},
 	}
 )
