@@ -1,25 +1,11 @@
 package config
 
 import (
-	"bufio"
-	"bytes"
-	"io/ioutil"
-	"regexp"
-	"strings"
+	"os"
 
 	"github.com/meowfaceman/conshim/pkg/shim"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-)
-
-const (
-	shebangMissingErrorMessage  = "unexpected EOF while skipping shebang line"
-	metadataMissingErrorMessage = "unexpected EOF while reading metadata"
-	commandMissingErrorMessage  = "unexpected EOF while reading command"
-)
-
-var (
-	sourceVersionRegex = regexp.MustCompile(`^#\s*source:\s*([^\s]+)\s*version:\s*([^\s]+)\s*(parameters:\s*([^\s]+)\s*)?$`)
 )
 
 // AddShim will add a shim that calls a separate command. The intent is that
@@ -62,7 +48,21 @@ func ListShims() ([]shim.Shim, error) {
 	var shims []shim.Shim
 	for _, shimFile := range shimFiles {
 		fullPath := configDir.GetBinFileName(shimFile)
-		shims = append(shims, getShimFromFile(shimFile, fullPath))
+
+		f, readErr := os.Open(fullPath)
+
+		if readErr != nil {
+			return nil, errors.Wrap(err, "error reading shim file")
+		}
+
+		func() {
+			defer func() {
+				if closeErr := f.Close(); closeErr != nil {
+					zap.S().Errorf("error clsoing shim file '%s': %v", fullPath, closeErr)
+				}
+			}()
+			shims = append(shims, shim.ParseShimFromReader(shimFile, f))
+		}()
 	}
 
 	return shims, nil
@@ -89,57 +89,4 @@ func UpdateShim(shimName, source, version string, params []string, command strin
 	}
 
 	return nil
-}
-
-func getShimFromFile(shimFile, fileName string) shim.Shim {
-	shimInfo := shim.Shim{
-		Name:    shimFile,
-		Source:  "???",
-		Version: "???",
-	}
-
-	contents, readErr := ioutil.ReadFile(fileName)
-
-	if readErr != nil {
-		zap.S().Debugf("error reading contents of shim '%s': %v", shimFile, readErr)
-		shimInfo.Command = "error reading contents"
-
-		return shimInfo
-	}
-
-	scanner := bufio.NewScanner(bytes.NewBuffer(contents))
-
-	// Shims should have three lines: a shebang header, a metadata comment line, and the actual command.
-	if !scanner.Scan() {
-		shimInfo.Command = shebangMissingErrorMessage
-
-		return shimInfo
-	}
-
-	if !scanner.Scan() {
-		shimInfo.Command = metadataMissingErrorMessage
-
-		return shimInfo
-	}
-
-	sourceVersion := scanner.Text()
-	matches := sourceVersionRegex.FindStringSubmatch(sourceVersion)
-
-	numMatches := len(matches)
-	if numMatches > 4 {
-		shimInfo.Source = matches[1]
-		shimInfo.Version = matches[2]
-
-		if matches[4] != "" {
-			shimInfo.Parameters = strings.Split(matches[4], ",")
-		}
-	}
-
-	if !scanner.Scan() {
-		shimInfo.Command = commandMissingErrorMessage
-	} else {
-		shimInfo.Command = scanner.Text()
-	}
-
-	return shimInfo
 }

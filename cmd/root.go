@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/meowfaceman/conshim/cmd/manifest"
 	"github.com/meowfaceman/conshim/cmd/registry"
+	"github.com/meowfaceman/conshim/cmd/shim"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -17,13 +18,11 @@ the local environment.`,
 )
 
 func init() {
-	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(binPathCmd)
-	rootCmd.AddCommand(listCmd)
-	rootCmd.AddCommand(updateCmd)
 
 	rootCmd.AddCommand(manifest.Root())
 	rootCmd.AddCommand(registry.Root())
+	rootCmd.AddCommand(shim.Root())
 }
 
 func Execute() {

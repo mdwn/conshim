@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/meowfaceman/conshim/pkg/registry"
+	"github.com/meowfaceman/conshim/pkg/manifest"
 	"github.com/spf13/cobra"
 )
 
@@ -37,11 +37,11 @@ func bindShimModificationFlags(cmd *cobra.Command) {
 }
 
 // readManifestFile will read the configured manifest file and return it along with a close function.
-func readManifestFile() (*registry.Manifest, func()) {
+func readManifestFile() (*manifest.Manifest, func()) {
 	manifestFile, err := os.Open(manifestFileName)
 	cobra.CheckErr(err)
 
-	m, err := registry.ReadManifest(manifestFile)
+	m, err := manifest.ReadManifest(manifestFile)
 	cobra.CheckErr(err)
 
 	return m, func() {
@@ -51,7 +51,7 @@ func readManifestFile() (*registry.Manifest, func()) {
 }
 
 // writeManifestFile will write the configured manifest file. If it exists already, it will be re-written.
-func writeManifestFile(m *registry.Manifest) {
+func writeManifestFile(m *manifest.Manifest) {
 	manifestFile, err := os.OpenFile(manifestFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	cobra.CheckErr(err)
 

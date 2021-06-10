@@ -164,13 +164,95 @@ func (c *ConfigDirectory) ListBinFiles() ([]string, error) {
 
 // CreateRegistryFile will create a registry file with the given name. It's up to the caller to close this file.
 func (c *ConfigDirectory) CreateRegistryFile(name string) (*os.File, error) {
-	file, err := os.Create(filepath.Join(c.registryPath, name))
+	if err := c.getLock(); err != nil {
+		return nil, errors.Wrap(err, "error getting lock while creating registry file")
+	}
+	defer c.unlock()
+
+	registryFilePath := filepath.Join(c.registryPath, name)
+
+	// Add if the file doesn't exist
+	if _, err := os.Stat(registryFilePath); err == nil {
+		return nil, fmt.Errorf("can't create registry file '%s' because it already exists", registryFilePath)
+	}
+
+	file, err := os.OpenFile(registryFilePath, os.O_CREATE|os.O_WRONLY, 0600)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "error while creating registry file")
 	}
 
 	return file, nil
+}
+
+// UpdateRegistryFile will update an existing registry file. It's up to the caller to close this file.
+func (c *ConfigDirectory) UpdateRegistryFile(name string) (*os.File, error) {
+	if err := c.getLock(); err != nil {
+		return nil, errors.Wrap(err, "error getting lock while creating registry file")
+	}
+	defer c.unlock()
+
+	registryFilePath := filepath.Join(c.registryPath, name)
+
+	// Update if the file does exist
+	if _, err := os.Stat(registryFilePath); err != nil {
+		return nil, fmt.Errorf("can't create registry file '%s' because it doesn't exist", registryFilePath)
+	}
+
+	file, err := os.OpenFile(registryFilePath, os.O_TRUNC|os.O_WRONLY, 0600)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "error while creating registry file")
+	}
+
+	return file, nil
+}
+
+// GetRegistryFile will get the registry file.
+func (c *ConfigDirectory) GetRegistryFile(sourceName string) (*os.File, func(), error) {
+	if err := c.getLock(); err != nil {
+		return nil, nil, errors.Wrap(err, "error getting lock while creating registry file")
+	}
+	defer c.unlock()
+
+	file, err := os.Open(filepath.Join(c.registryPath, sourceName))
+
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "error while opening registry file")
+	}
+
+	return file, func() {
+		if closeErr := file.Close(); closeErr != nil {
+			zap.S().Errorf("error while closing registry file: %v", closeErr)
+		}
+	}, nil
+}
+
+// ListRegistryFiles will return the list of the files in the registry directory.
+func (c *ConfigDirectory) ListRegistryFiles() ([]string, error) {
+	if err := c.getLock(); err != nil {
+		return nil, errors.Wrap(err, "error getting lock while listing registry files")
+	}
+	defer c.unlock()
+
+	var registryManifests []string
+
+	err := filepath.Walk(c.registryPath, func(path string, info fs.FileInfo, err error) error {
+		// If we find a directory, skip it. We only care about shim files here.
+		if info.IsDir() {
+			return nil
+		}
+
+		registryManifests = append(registryManifests, info.Name())
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "error while listing registry file directory")
+	}
+
+	return registryManifests, nil
 }
 
 func (c *ConfigDirectory) getLock() error {

@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	addRegistryName string
-	addCmd          = &cobra.Command{
-		Use:   "add <registry-name>",
-		Short: "Adds a registry to conshim.",
-		Long:  "Adds a registry to the local conshim configuration.",
+	updateRegistryName string
+	updateCmd          = &cobra.Command{
+		Use:   "update <registry-name>",
+		Short: "Updates a registry in conshim.",
+		Long:  "Updates a registry already present in the local conshim configuration.",
 
 		Args: func(cmd *cobra.Command, args []string) error {
 			numArgs := len(args)
@@ -21,16 +21,16 @@ var (
 				return fmt.Errorf("expected 1 argument, got %d", numArgs)
 			}
 
-			addRegistryName = args[0]
+			updateRegistryName = args[0]
 
 			return nil
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
-			registry, err := registry.GetRegistry(addRegistryName)
+			registry, err := registry.GetRegistry(updateRegistryName)
 			cobra.CheckErr(err)
 
-			cobra.CheckErr(config.WriteManifestToConfigDirectory(registry.GetManifest()))
+			cobra.CheckErr(config.UpdateManifestInConfigDirectory(registry.GetManifest()))
 		},
 	}
 )

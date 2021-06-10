@@ -1,7 +1,9 @@
-package registry
+package manifest
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,6 +22,9 @@ const (
 type Manifest struct {
 	// Source is the URL of the registry that this manifest belongs to.
 	Source string `json:"source"`
+
+	// Version is the version of the manifest.
+	Version string `json:"version"`
 
 	// Shims is a list of shims described by this manifest. The key here is the name of the shim
 	// which corresponds to the executable name for this shim.
@@ -142,4 +147,27 @@ func (m *Manifest) RemoveShim(shimName string) error {
 	delete(m.Shims, shimName)
 
 	return nil
+}
+
+// SourceHash returns a hash of the source name attached to this manifest.
+func (m *Manifest) SourceHash() string {
+	return SourceHash(m.Source)
+}
+
+func (m *Manifest) ShimsToString() string {
+	shims := []shim.Shim{}
+
+	for shimName, shim := range m.Shims {
+		shim.Name = shimName
+		shims = append(shims, shim)
+	}
+
+	return shim.ShimsListToString(shims)
+}
+
+// SourceHash generates a hash of the given source name.
+func SourceHash(sourceName string) string {
+	hash := sha256.New()
+	hash.Write([]byte(sourceName))
+	return base64.URLEncoding.EncodeToString(hash.Sum(nil))
 }

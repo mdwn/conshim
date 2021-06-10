@@ -1,9 +1,10 @@
-package cmd
+package shim
 
 import (
 	"fmt"
 
 	"github.com/meowfaceman/conshim/pkg/config"
+	"github.com/meowfaceman/conshim/pkg/shim"
 	"github.com/spf13/cobra"
 )
 
@@ -17,11 +18,7 @@ var (
 			shims, err := config.ListShims()
 			cobra.CheckErr(err)
 
-			fmt.Printf("%25s    %7s   %s\n", "Name", "Source", "Version")
-			fmt.Println("--------------------------|---------|---------")
-			for _, shim := range shims {
-				fmt.Printf("%25s    %7s   %s\n", shim.Name, shim.Source, shim.Version)
-			}
+			fmt.Print(shim.ShimsListToString(shims))
 		},
 	}
 )

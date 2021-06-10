@@ -7,9 +7,9 @@ import (
 
 var (
 	updateShimCmd = &cobra.Command{
-		Use:   "remove-shim",
-		Short: "Removes a shim from the manifest.",
-		Long:  "Removes a shim entry from the manifest.",
+		Use:   "update-shim",
+		Short: "Updates a shim in the manifest.",
+		Long:  "Updates a shim entry in the manifest.",
 
 		Run: func(cmd *cobra.Command, args []string) {
 			m, closeFunc := readManifestFile()

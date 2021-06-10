@@ -1,23 +1,32 @@
 package shim
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/meowfaceman/conshim/assets"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 const (
 	// Only support bash templates for now
 	bashTemplate = "bash"
+
+	shebangMissingErrorMessage  = "unexpected EOF while skipping shebang line"
+	metadataMissingErrorMessage = "unexpected EOF while reading metadata"
+	commandMissingErrorMessage  = "unexpected EOF while reading command"
 )
 
 var (
-	templates = map[string]*template.Template{}
+	templates          = map[string]*template.Template{}
+	sourceVersionRegex = regexp.MustCompile(`^#\s*source:\s*([^\s]+)\s*version:\s*(.+)\s*$`)
 )
 
 func init() {
@@ -96,4 +105,80 @@ func (s Shim) RenderShim(parameters map[string]string) (string, error) {
 	}
 
 	return strings.NewReplacer(replacerArgs...).Replace(renderedShim.String()), nil
+}
+
+// ParseShimFromReader will parse a shim object from a file. Right now this only supports bash templates.
+func ParseShimFromReader(shimFile string, reader io.Reader) Shim {
+	shimInfo := Shim{
+		Name:    shimFile,
+		Source:  "???",
+		Version: "???",
+	}
+
+	contents, readErr := io.ReadAll(reader)
+
+	if readErr != nil {
+		zap.S().Debugf("error reading contents of shim '%s': %v", shimFile, readErr)
+		shimInfo.Command = "error reading contents"
+
+		return shimInfo
+	}
+
+	scanner := bufio.NewScanner(bytes.NewBuffer(contents))
+
+	// Shims should have three lines: a shebang header, a metadata comment line, and the actual command.
+	if !scanner.Scan() {
+		shimInfo.Command = shebangMissingErrorMessage
+
+		return shimInfo
+	}
+
+	if !scanner.Scan() {
+		shimInfo.Command = metadataMissingErrorMessage
+
+		return shimInfo
+	}
+
+	sourceVersion := scanner.Text()
+	matches := sourceVersionRegex.FindStringSubmatch(sourceVersion)
+
+	numMatches := len(matches)
+	if numMatches == 3 {
+		shimInfo.Source = matches[1]
+		shimInfo.Version = matches[2]
+	}
+
+	if !scanner.Scan() {
+		shimInfo.Command = commandMissingErrorMessage
+	} else {
+		shimInfo.Command = scanner.Text()
+	}
+
+	return shimInfo
+}
+
+// ShimsListToString will take a list of shims and create a string.
+func ShimsListToString(shims []Shim) string {
+	entries := []string{}
+	for _, shim := range shims {
+		builder := strings.Builder{}
+		builder.WriteString(fmt.Sprintf("       Name: %s\n", shim.Name))
+		if shim.Source != "" {
+			builder.WriteString(fmt.Sprintf("     Source: %s\n", shim.Source))
+		}
+		builder.WriteString(fmt.Sprintf("    Version: %s\n", shim.Version))
+
+		if shim.Description != "" {
+			builder.WriteString(fmt.Sprintf("Description: %s\n", shim.Description))
+		}
+
+		if len(shim.Parameters) > 0 {
+			builder.WriteString(fmt.Sprintf(" Parameters: %s\n", strings.Join(shim.Parameters, ",")))
+		}
+
+		builder.WriteString(fmt.Sprintf("    Command: %s\n", shim.Command))
+		entries = append(entries, builder.String())
+	}
+
+	return strings.Join(entries, "-------\n")
 }

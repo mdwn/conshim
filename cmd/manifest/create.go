@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/meowfaceman/conshim/pkg/registry"
+	"github.com/meowfaceman/conshim/pkg/manifest"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ var (
 				cobra.CheckErr(fmt.Sprintf("manifest file '%s' already exists", manifestFileName))
 			}
 
-			m := registry.CreateManifest(createCmdSourceName)
+			m := manifest.CreateManifest(createCmdSourceName)
 			writeManifestFile(m)
 		},
 	}

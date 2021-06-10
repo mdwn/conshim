@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/meowfaceman/conshim/pkg/manifest"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -23,7 +24,7 @@ var (
 // Registry is a git repository containing a conshim manifest.
 type Registry struct {
 	// manifest is the manifest associated with the registry. This manifest is expected to be titled `manifest.br` in the root of the directory.
-	manifest *Manifest
+	manifest *manifest.Manifest
 }
 
 // GetRegistry will attempt to get a manifest file from the given registry.
@@ -67,7 +68,7 @@ func GetRegistry(url string) (*Registry, error) {
 		}
 	}()
 
-	manifest, err := ReadManifest(manifestFile)
+	manifest, err := manifest.ReadManifest(manifestFile)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading manifest from git repository during registry retrieval")
@@ -79,7 +80,7 @@ func GetRegistry(url string) (*Registry, error) {
 }
 
 // GetManifest will return the manifest from the registry.
-func (r *Registry) GetManifest() *Manifest {
+func (r *Registry) GetManifest() *manifest.Manifest {
 	return r.manifest
 }
 

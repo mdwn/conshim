@@ -17,6 +17,8 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(getShimCmd)
 	rootCmd.AddCommand(infoCmd)
+	rootCmd.AddCommand(listShimsCmd)
+	rootCmd.AddCommand(loadShimCmd)
 	rootCmd.AddCommand(removeShimCmd)
 	rootCmd.AddCommand(renderShimCmd)
 	rootCmd.AddCommand(updateShimCmd)

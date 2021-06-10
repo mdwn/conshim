@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	renderCmdShimName   string
-	renderCmdParameters map[string]string
+	renderShimCmdShimName   string
+	renderShimCmdParameters map[string]string
 
 	renderShimCmd = &cobra.Command{
 		Use:   "render-shim <name>",
@@ -22,7 +22,7 @@ var (
 				return fmt.Errorf("expected 1 argument, got %d", numArgs)
 			}
 
-			renderCmdShimName = args[0]
+			renderShimCmdShimName = args[0]
 
 			return nil
 		},
@@ -31,8 +31,8 @@ var (
 			m, closeFunc := readManifestFile()
 			defer closeFunc()
 
-			if manifestShim, ok := m.GetShim(renderCmdShimName); ok {
-				renderedShim, err := manifestShim.RenderShim(renderCmdParameters)
+			if manifestShim, ok := m.GetShim(renderShimCmdShimName); ok {
+				renderedShim, err := manifestShim.RenderShim(renderShimCmdParameters)
 				cobra.CheckErr(err)
 				fmt.Println(renderedShim)
 			} else {
@@ -45,5 +45,5 @@ var (
 func init() {
 	bindCommonManifestFlags(renderShimCmd)
 
-	renderShimCmd.Flags().StringToStringVarP(&renderCmdParameters, "parameters", "p", map[string]string{}, "parameters and values for the command")
+	renderShimCmd.Flags().StringToStringVarP(&renderShimCmdParameters, "parameters", "p", map[string]string{}, "parameters and values for the command")
 }
